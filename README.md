@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚜 TractorHub
 
-## Getting Started
+**แพลตฟอร์มศูนย์กลางบริการซ่อมบำรุงรถแทรกเตอร์แบบครบวงจร** — มาร์เก็ตเพลสอะไหล่ Multi-vendor, ระบบเรียกช่าง, และฐานข้อมูลประวัติรถ ในแพลตฟอร์มเดียว
 
-First, run the development server:
+> Phase 1: เว็บมาร์เก็ตเพลส + ระบบหลังบ้าน — ซื้อ-ขาย-จัดการเงินได้จริง 100%
+
+## ฟีเจอร์หลัก (Phase 1)
+
+| ส่วน | ความสามารถ |
+|---|---|
+| 🛒 **มาร์เก็ตเพลส** | ค้นหา/กรองอะไหล่ตามยี่ห้อ-รุ่นรถ (Compatibility Mapping), ตะกร้าข้ามร้าน, รีวิว |
+| 💳 **ชำระเงิน 3 ช่องทาง** | บัตรเครดิต · QR PromptPay (มาตรฐาน EMVCo จริง) · โอนธนาคาร+แจ้งสลิป |
+| 📦 **Order Splitting** | ตะกร้าเดียวจ่ายครั้งเดียว ระบบแยกออเดอร์ให้แต่ละร้านอัตโนมัติ |
+| 💰 **Multi-vendor Wallet** | คำนวณคอมมิชชันรายร้าน (basis points), ยอดรอเคลียร์ → ยอดจริงเมื่องานสำเร็จ, Ledger ตรวจสอบย้อนหลังทุกบาท, ระบบถอนเงิน+อนุมัติ |
+| 🏪 **Vendor Portal** | จัดการสินค้า, รับ-จัดส่งออเดอร์, กระเป๋าเงิน, ขอถอนเงิน |
+| 👨‍💼 **Admin Back Office** | แดชบอร์ด KPI + กราฟยอดขาย, ยืนยันยอดโอน, อนุมัติร้านค้า/ถอนเงิน, คูปอง, แบนเนอร์ |
+| 🔐 **สมาชิก OTP** | ล็อกอินด้วยเบอร์โทร + OTP (เกษตรกรคุ้นเคยกว่าอีเมล), 3 บทบาท |
+| 🚜 **ประวัติรถ** | ตาราง Vehicle + GPS Log พร้อม refCode รองรับ RFID (โครงเฟส 4) |
+
+## เริ่มต้นใช้งาน
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npx prisma db push     # สร้างฐานข้อมูล SQLite (dev)
+npm run db:seed        # ข้อมูลตัวอย่าง 4 ร้านค้า 24 สินค้า
+npm run dev            # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### บัญชีทดสอบ (OTP ในโหมด dev = `123456`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| บทบาท | เบอร์โทร | เข้าที่ |
+|---|---|---|
+| ลูกค้า | `0811111111` | `/` |
+| ร้านค้า | `0822222222` | `/vendor` |
+| แอดมิน | `0899999999` | `/admin` |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## เทคโนโลยี
 
-## Learn More
+Next.js 16 (App Router, RSC) · TypeScript · Tailwind CSS v4 · Prisma 6 · SQLite (dev) / PostgreSQL (production) · promptpay-qr + qrcode
 
-To learn more about Next.js, take a look at the following resources:
+## เอกสาร
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — สถาปัตยกรรม, โฟลว์เงิน, การเตรียมพร้อมเฟส 3-4
+- [DEPLOY.md](./DEPLOY.md) — ขั้นตอน deploy ขึ้น Vercel + PostgreSQL
+- [CONTRACT.md](./CONTRACT.md) — สัญญา API ทุก endpoint + เส้นทางหน้าจอ
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## โครงสร้างโปรเจกต์
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── (store)/      หน้าร้านลูกค้า (มาร์เก็ตเพลส, ตะกร้า, ชำระเงิน)
+│   ├── admin/        หลังบ้านผู้ดูแลระบบ
+│   ├── vendor/       พอร์ทัลร้านค้าพาร์ทเนอร์
+│   └── api/          REST API (โมบายแอปเฟส 3 ใช้ชุดเดียวกัน)
+├── components/       UI components (store / backoffice)
+└── lib/              Domain services (auth, wallet, payment, money)
+prisma/               Schema + seed
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+พัฒนาโดยทีม AI Trainer Thailand — Phase 1 ของโครงการ 5 เฟสตามข้อเสนอโครงการ
