@@ -1,0 +1,163 @@
+import type { Prisma } from "@prisma/client";
+import { db } from "@/lib/db";
+import { bahtToSatang } from "@/lib/money";
+import { ProductCard } from "@/components/store/product-card";
+import { FiltersBar } from "@/components/store/filters-bar";
+import { Pagination } from "@/components/store/pagination";
+
+const PAGE_SIZE = 12;
+
+type SearchParams = {
+  q?: string;
+  category?: string;
+  brand?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  sort?: string;
+  page?: string;
+};
+
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}) {
+  const sp = await searchParams;
+  const q = sp.q?.trim() || undefined;
+  const category = sp.category?.trim() || undefined;
+  const brand = sp.brand?.trim() || undefined;
+  const sort = sp.sort || "new";
+  const page = Math.max(1, Number(sp.page) || 1);
+
+  const where: Prisma.ProductWhereInput = { active: true };
+  if (category) where.category = { OR: [{ slug: category }, { id: category }] };
+  if (brand) where.brand = brand;
+  if (q)
+    where.OR = [
+      { name: { contains: q } },
+      { description: { contains: q } },
+      { partCode: { contains: q } },
+      { sku: { contains: q } },
+      { brand: { contains: q } },
+    ];
+  const minPriceSatang = sp.minPrice ? bahtToSatang(Number(sp.minPrice)) : undefined;
+  const maxPriceSatang = sp.maxPrice ? bahtToSatang(Number(sp.maxPrice)) : undefined;
+  if (minPriceSatang !== undefined || maxPriceSatang !== undefined) {
+    where.priceSatang = {
+      ...(minPriceSatang !== undefined ? { gte: minPriceSatang } : {}),
+      ...(maxPriceSatang !== undefined ? { lte: maxPriceSatang } : {}),
+    };
+  }
+
+  let orderBy: Prisma.ProductOrderByWithRelationInput[];
+  switch (sort) {
+    case "price_asc":
+      orderBy = [{ priceSatang: "asc" }];
+      break;
+    case "price_desc":
+      orderBy = [{ priceSatang: "desc" }];
+      break;
+    case "popular":
+      orderBy = [{ reviews: { _count: "desc" } }, { createdAt: "desc" }];
+      break;
+    case "name":
+      orderBy = [{ name: "asc" }];
+      break;
+    default:
+      orderBy = [{ createdAt: "desc" }];
+  }
+
+  const [total, rows, categories, brandRows] = await Promise.all([
+    db.product.count({ where }),
+    db.product.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: { vendor: { select: { shopName: true } } },
+    }),
+    db.category.findMany({
+      orderBy: [{ sort: "asc" }, { name: "asc" }],
+      select: { slug: true, name: true, emoji: true },
+    }),
+    db.product.findMany({
+      where: { active: true, brand: { not: null } },
+      select: { brand: true },
+      distinct: ["brand"],
+      orderBy: { brand: "asc" },
+    }),
+  ]);
+
+  const ratings = rows.length
+    ? await db.review.groupBy({
+        by: ["productId"],
+        where: { productId: { in: rows.map((r) => r.id) } },
+        _avg: { rating: true },
+        _count: { rating: true },
+      })
+    : [];
+  const ratingMap = new Map(
+    ratings.map((r) => [
+      r.productId,
+      {
+        avgRating: r._avg.rating ? Math.round(r._avg.rating * 10) / 10 : 0,
+        reviewCount: r._count.rating,
+      },
+    ]),
+  );
+
+  const products = rows.map((p) => ({
+    id: p.id,
+    name: p.name,
+    priceSatang: p.priceSatang,
+    imageJson: p.imageJson,
+    vendor: p.vendor,
+    avgRating: ratingMap.get(p.id)?.avgRating ?? 0,
+    reviewCount: ratingMap.get(p.id)?.reviewCount ?? 0,
+  }));
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const brands = brandRows.map((b) => b.brand).filter((b): b is string => Boolean(b));
+
+  return (
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 px-3 py-6 sm:px-6 sm:py-10">
+      <div>
+        <h1 className="text-xl font-bold text-ink sm:text-2xl">
+          {q ? `ผลการค้นหา “${q}”` : "สินค้าทั้งหมด"}
+        </h1>
+        <p className="text-sm text-muted">พบ {total.toLocaleString("th-TH")} รายการ</p>
+      </div>
+
+      <FiltersBar
+        categories={categories}
+        brands={brands}
+        initial={{ q, category, brand, minPrice: sp.minPrice, maxPrice: sp.maxPrice, sort }}
+      />
+
+      {products.length === 0 ? (
+        <p className="rounded-2xl bg-white p-10 text-center text-sm text-muted shadow-sm">
+          ไม่พบสินค้าที่ตรงกับเงื่อนไข ลองปรับตัวกรองใหม่อีกครั้ง
+        </p>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} />
+          ))}
+        </div>
+      )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        searchParams={{
+          q,
+          category,
+          brand,
+          minPrice: sp.minPrice,
+          maxPrice: sp.maxPrice,
+          sort,
+        }}
+      />
+    </div>
+  );
+}
