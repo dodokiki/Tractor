@@ -1,0 +1,374 @@
+// TractorHub — Phase 1 Database Schema
+// เงินทุกจำนวนเก็บเป็น "สตางค์" (Int) เพื่อความแม่นยำทางการเงิน
+// SQLite สำหรับ dev — โครงสร้างพอร์ตไป PostgreSQL ได้ทันที (เปลี่ยน provider)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- สมาชิกและสิทธิ์ ----------
+
+enum Role {
+  CUSTOMER
+  VENDOR
+  ADMIN
+}
+
+model User {
+  id        String    @id @default(cuid())
+  phone     String    @unique
+  name      String
+  email     String?
+  role      Role      @default(CUSTOMER)
+  createdAt DateTime  @default(now())
+  addresses Address[]
+  vendor    Vendor?
+  orders    Order[]
+  vehicles  Vehicle[]
+  sessions  Session[]
+  reviews   Review[]
+}
+
+model Session {
+  token     String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
+model Address {
+  id          String  @id @default(cuid())
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipient   String
+  phone       String
+  line1       String
+  subdistrict String
+  district    String
+  province    String
+  postcode    String
+  isDefault   Boolean @default(false)
+}
+
+// ---------- ร้านค้าพาร์ทเนอร์ ----------
+
+model Vendor {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  shopName       String
+  description    String?
+  logoEmoji      String   @default("🏪")
+  themeColor     String   @default("1B7A43")
+  // basis points: 700 = 7%
+  commissionBps  Int      @default(700)
+  approved       Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  products       Product[]
+  subOrders      SubOrder[]
+  wallet         Wallet?
+  withdrawals    WithdrawalRequest[]
+}
+
+// ---------- แคตตาล็อกสินค้า ----------
+
+model Category {
+  id       String    @id @default(cuid())
+  name     String
+  slug     String    @unique
+  emoji    String    @default("🔧")
+  sort     Int       @default(0)
+  products Product[]
+}
+
+model TractorModel {
+  id            String          @id @default(cuid())
+  brand         String
+  model         String
+  compatibility Compatibility[]
+  vehicles      Vehicle[]
+
+  @@unique([brand, model])
+}
+
+model Product {
+  id            String          @id @default(cuid())
+  vendorId      String
+  vendor        Vendor          @relation(fields: [vendorId], references: [id])
+  categoryId    String
+  category      Category        @relation(fields: [categoryId], references: [id])
+  name          String
+  sku           String          @unique
+  partCode      String?
+  brand         String?
+  description   String?
+  priceSatang   Int
+  stock         Int             @default(0)
+  // ภาพสินค้า: emoji + gradient (MVP) หรือ URL จริงในอนาคต — JSON string
+  imageJson     String          @default("{\"emoji\":\"🔩\",\"from\":\"#1B7A43\",\"to\":\"#2FA55C\"}")
+  active        Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  compatibility Compatibility[]
+  orderItems    OrderItem[]
+  reviews       Review[]
+}
+
+model Compatibility {
+  productId      String
+  tractorModelId String
+  product        Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tractorModel   TractorModel @relation(fields: [tractorModelId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tractorModelId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+}
+
+// ---------- คำสั่งซื้อ (แยกตามร้าน = Order Splitting) ----------
+
+enum OrderStatus {
+  PENDING_PAYMENT
+  PAID
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum SubOrderStatus {
+  AWAITING_PAYMENT
+  PENDING_CONFIRM
+  CONFIRMED
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+model Order {
+  id             String      @id @default(cuid())
+  code           String      @unique // เช่น TH-10452
+  userId         String
+  user           User        @relation(fields: [userId], references: [id])
+  status         OrderStatus @default(PENDING_PAYMENT)
+  itemsSatang    Int
+  shippingSatang Int         @default(0)
+  discountSatang Int         @default(0)
+  totalSatang    Int
+  couponCode     String?
+  // snapshot ที่อยู่จัดส่ง (JSON string)
+  addressJson    String
+  createdAt      DateTime    @default(now())
+  subOrders      SubOrder[]
+  payment        Payment?
+}
+
+model SubOrder {
+  id               String         @id @default(cuid())
+  orderId          String
+  order            Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  vendorId         String
+  vendor           Vendor         @relation(fields: [vendorId], references: [id])
+  status           SubOrderStatus @default(AWAITING_PAYMENT)
+  itemsSatang      Int
+  commissionSatang Int            @default(0)
+  netSatang        Int            @default(0)
+  settledAt        DateTime?
+  items            OrderItem[]
+  walletTxns       WalletTransaction[]
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  subOrderId   String
+  subOrder     SubOrder @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id])
+  nameSnapshot String
+  priceSatang  Int
+  qty          Int
+}
+
+// ---------- การชำระเงิน ----------
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  PROMPTPAY
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  orderId      String        @unique
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  method       PaymentMethod
+  status       PaymentStatus @default(PENDING)
+  amountSatang Int
+  ref          String?
+  slipNote     String?
+  paidAt       DateTime?
+  createdAt    DateTime      @default(now())
+}
+
+// ---------- Multi-vendor Wallet ----------
+
+enum WalletTxnType {
+  SALE_CREDIT
+  COMMISSION_FEE
+  WITHDRAWAL
+  ADJUSTMENT
+}
+
+model Wallet {
+  id            String              @id @default(cuid())
+  vendorId      String              @unique
+  vendor        Vendor              @relation(fields: [vendorId], references: [id])
+  balanceSatang Int                 @default(0)
+  pendingSatang Int                 @default(0)
+  transactions  WalletTransaction[]
+}
+
+model WalletTransaction {
+  id           String        @id @default(cuid())
+  walletId     String
+  wallet       Wallet        @relation(fields: [walletId], references: [id])
+  type         WalletTxnType
+  // จำนวนเงินมีเครื่องหมาย: เข้ากระเป๋าเป็นบวก ออกเป็นลบ
+  amountSatang Int
+  note         String?
+  subOrderId   String?
+  subOrder     SubOrder?     @relation(fields: [subOrderId], references: [id])
+  createdAt    DateTime      @default(now())
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+model WithdrawalRequest {
+  id           String           @id @default(cuid())
+  vendorId     String
+  vendor       Vendor           @relation(fields: [vendorId], references: [id])
+  amountSatang Int
+  bankJson     String // {bank, accountNo, accountName}
+  status       WithdrawalStatus @default(PENDING)
+  note         String?
+  processedAt  DateTime?
+  createdAt    DateTime         @default(now())
+}
+
+// ---------- ข้อมูลรถและ Log (เตรียมเฟส 4 / RFID) ----------
+
+model Vehicle {
+  id             String        @id @default(cuid())
+  refCode        String        @unique // รหัสอ้างอิงไม่ซ้ำ พร้อมผูกแท็ก RFID
+  ownerId        String?
+  owner          User?         @relation(fields: [ownerId], references: [id])
+  tractorModelId String?
+  tractorModel   TractorModel? @relation(fields: [tractorModelId], references: [id])
+  plateNo        String?
+  vin            String?
+  engineHours    Float?
+  mileageKm      Float?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  logs           VehicleLog[]
+}
+
+enum VehicleLogType {
+  SERVICE
+  INSPECTION
+  LOCATION
+  PART_CHANGE
+}
+
+model VehicleLog {
+  id         String         @id @default(cuid())
+  vehicleId  String
+  vehicle    Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  type       VehicleLogType
+  lat        Float?
+  lng        Float?
+  mileageKm  Float?
+  detailJson String? // รายละเอียดงาน/อะไหล่ที่เปลี่ยน
+  createdAt  DateTime       @default(now())
+}
+
+// ---------- เนื้อหาเว็บ / โปรโมชัน ----------
+
+enum CouponType {
+  PERCENT
+  FIXED
+}
+
+model Coupon {
+  id             String     @id @default(cuid())
+  code           String     @unique
+  type           CouponType
+  value          Int // PERCENT: 10 = 10%, FIXED: จำนวนสตางค์
+  minTotalSatang Int        @default(0)
+  active         Boolean    @default(true)
+  expiresAt      DateTime?
+  usedCount      Int        @default(0)
+}
+
+model Banner {
+  id       String  @id @default(cuid())
+  title    String
+  subtitle String?
+  ctaText  String?
+  ctaHref  String?
+  active   Boolean @default(true)
+  sort     Int     @default(0)
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+// ---------- Audit Log ----------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entity     String
+  entityId   String?
+  detailJson String?
+  createdAt  DateTime @default(now())
+}

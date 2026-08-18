@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  /* TractorHub design tokens — ตรงกับ UI mockup ใน Proposal */
+  --color-primary: #1b7a43;
+  --color-primary-dark: #14351f;
+  --color-primary-light: #2fa55c;
+  --color-accent: #f5862b;
+  --color-accent-dark: #d9631a;
+  --color-surface: #f4f7f5;
+  --color-ink: #1e2b23;
+  --color-muted: #6c7a70;
+  --color-line: #d5e2d9;
+  --font-sans: "Noto Sans Thai", "Leelawadee UI", "Segoe UI", sans-serif;
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
