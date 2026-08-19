@@ -65,7 +65,7 @@ export default async function OrderDetailPage({
         <>
           <CheckoutSteps current={3} />
           <div className="rounded-xl bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
-            🎉 สั่งซื้อและชำระเงินสำเร็จ ขอบคุณที่ใช้บริการ TractorHub
+            🎉 สั่งซื้อและชำระเงินสำเร็จ ขอบคุณที่ใช้บริการ Rodlex รถเหล็ก
           </div>
         </>
       )}

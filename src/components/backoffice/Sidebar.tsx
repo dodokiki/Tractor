@@ -57,8 +57,9 @@ export default function Sidebar({
     <aside className={`${bg} sticky top-0 flex h-screen w-64 shrink-0 flex-col self-start text-white`}>
       <div className="border-b border-white/10 px-5 py-6">
         <div className="flex items-center gap-2 text-lg font-bold">
-          <span>🚜</span>
-          <span>TractorHub</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/rodlex-logo.png" alt="Rodlex" className="h-7 w-7 object-contain" />
+          <span>Rodlex</span>
         </div>
         <div className="mt-1 text-xs text-white/60">{title}</div>
         {subtitle ? (

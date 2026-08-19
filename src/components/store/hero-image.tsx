@@ -15,7 +15,7 @@ export function HeroImage() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/products/hero-tractor.svg"
-        alt="รถแทรกเตอร์และอะไหล่ TractorHub"
+        alt="รถแทรกเตอร์และอะไหล่ Rodlex"
         className="relative z-10 w-4/5 drop-shadow-2xl"
         onError={(e) => {
           (e.currentTarget as HTMLImageElement).style.display = "none";

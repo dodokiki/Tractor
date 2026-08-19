@@ -373,3 +373,122 @@ model AuditLog {
   detailJson String?
   createdAt  DateTime @default(now())
 }
+
+// ---------- Rodlex: ทีมช่าง / กระทู้ / ข่าว / สมัครงาน / เรียกช่าง ----------
+
+enum MachineCategory {
+  CONSTRUCTION
+  AGRICULTURE
+  MODIFICATION
+}
+
+model Technician {
+  id           String          @id @default(cuid())
+  code         String          @unique // RL-XXXX
+  name         String
+  bio          String?
+  skills       String? // ความเชี่ยวชาญ (คั่นด้วย ,)
+  category     MachineCategory @default(AGRICULTURE)
+  province     String?
+  online       Boolean         @default(true)
+  jobsDone     Int             @default(0)
+  rating       Float           @default(4.5)
+  reviewCount  Int             @default(0)
+  featured     Boolean         @default(false)
+  imageJson    String          @default("{\"emoji\":\"🧑‍🔧\",\"from\":\"#1B7A43\",\"to\":\"#2FA55C\"}")
+  createdAt    DateTime        @default(now())
+}
+
+enum ForumCategory {
+  REPAIR
+  PARTS
+  MODIFICATION
+  TECH_ZONE
+}
+
+model ForumThread {
+  id        String        @id @default(cuid())
+  authorId  String
+  title     String
+  body      String
+  category  ForumCategory @default(REPAIR)
+  imagesJson String? // [{emoji,from,to} x N]
+  likeCount Int           @default(0)
+  createdAt DateTime      @default(now())
+  replies   ForumReply[]
+  likes     ForumLike[]
+}
+
+model ForumReply {
+  id        String      @id @default(cuid())
+  threadId  String
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId  String
+  body      String
+  createdAt DateTime    @default(now())
+}
+
+model ForumLike {
+  threadId String
+  userId   String
+  thread   ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@id([threadId, userId])
+}
+
+enum NewsGroup {
+  CONSTRUCTION
+  AGRICULTURE
+  PLATFORM
+}
+
+model NewsArticle {
+  id          String    @id @default(cuid())
+  title       String
+  excerpt     String
+  body        String
+  group       NewsGroup
+  tags        String?
+  imageJson   String    @default("{\"emoji\":\"📰\",\"from\":\"#1B7A43\",\"to\":\"#2FA55C\"}")
+  videoUrl    String?
+  publishedAt DateTime  @default(now())
+}
+
+enum JobType {
+  TECHNICIAN_FREELANCE
+  SHOP_PARTNER
+  STAFF
+}
+
+model JobPosting {
+  id          String   @id @default(cuid())
+  title       String
+  type        JobType
+  location    String?
+  wage        String?
+  description String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  applications JobApplication[]
+}
+
+model JobApplication {
+  id        String     @id @default(cuid())
+  jobId     String
+  job       JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  name      String
+  phone     String
+  note      String?
+  createdAt DateTime   @default(now())
+}
+
+model ServiceRequest {
+  id          String   @id @default(cuid())
+  name        String
+  phone       String
+  machineType String
+  problem     String
+  province    String?
+  status      String   @default("NEW") // NEW / CONTACTED / CLOSED
+  createdAt   DateTime @default(now())
+}

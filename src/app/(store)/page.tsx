@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { ProductCard } from "@/components/store/product-card";
-import { HeroImage } from "@/components/store/hero-image";
+import { NewsCard } from "@/components/store/news-card";
+import { parseProductImage } from "@/components/store/image";
+import { ProductImage } from "@/components/store/product-image";
+import { StarRating } from "@/components/store/star-rating";
 
 async function getData() {
-  const [banner, categories, topProductsRaw] = await Promise.all([
-    db.banner.findFirst({ where: { active: true }, orderBy: [{ sort: "asc" }] }),
+  const [categories, topProductsRaw, newsArticles, techniciansRaw] = await Promise.all([
     db.category.findMany({
       orderBy: [{ sort: "asc" }, { name: "asc" }],
       take: 8,
@@ -16,6 +18,14 @@ async function getData() {
       orderBy: [{ reviews: { _count: "desc" } }, { createdAt: "desc" }],
       take: 8,
       include: { vendor: { select: { id: true, shopName: true } } },
+    }),
+    db.newsArticle.findMany({
+      orderBy: { publishedAt: "desc" },
+      take: 3,
+    }),
+    db.technician.findMany({
+      orderBy: [{ featured: "desc" }, { rating: "desc" }],
+      take: 4,
     }),
   ]);
 
@@ -48,72 +58,72 @@ async function getData() {
     reviewCount: ratingMap.get(p.id)?.reviewCount ?? 0,
   }));
 
-  return { banner, categories, topProducts };
+  return { categories, topProducts, newsArticles, technicians: techniciansRaw };
 }
 
-const TRUST_ITEMS = [
-  "อะไหล่แท้รับประกัน",
-  "ส่งไวทั่วไทย",
-  "จ่ายปลอดภัย",
+const BANNER_CARDS = [
+  { title: "รถเหล็ก STORE", subtitle: "SERVICES · PARTS", from: "#8CC63F", to: "#1B7A43" },
+  { title: "งานก่อสร้าง", subtitle: "รถขุด รถตัก รถบด", from: "#F5862B", to: "#D9631A" },
+  { title: "งานเกษตร", subtitle: "แทรกเตอร์ รถเกี่ยว", from: "#22C55E", to: "#0F7A3D" },
+  { title: "งาน Custom", subtitle: "ดัดแปลงตามสั่ง", from: "#8B5CF6", to: "#4F46E5" },
+  { title: "เรียกช่างด่วน", subtitle: "ทั่วไทย 24 ชม.", from: "#EC4899", to: "#DB2777" },
 ];
 
 export default async function HomePage() {
-  const { banner, categories, topProducts } = await getData();
+  const { categories, topProducts, newsArticles, technicians } = await getData();
 
   return (
-    <div className="flex flex-col gap-10 py-6 sm:gap-14 sm:py-10">
-      {/* Hero banner */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary-dark via-primary to-primary-light text-white">
-        <div
-          aria-hidden
-          className="absolute inset-0 opacity-[0.12]"
-          style={{
-            backgroundImage:
-              "radial-gradient(rgba(255,255,255,0.9) 1px, transparent 1px)",
-            backgroundSize: "22px 22px",
-          }}
-        />
-        <div className="relative mx-auto grid max-w-6xl items-center gap-8 px-3 py-10 sm:grid-cols-2 sm:px-6 sm:py-16 lg:gap-12">
-          <div className="max-w-xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white/90 ring-1 ring-white/20">
-              🚜 มาร์เก็ตเพลสอะไหล่แทรกเตอร์อันดับ 1
-            </span>
-            <h1 className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl">
-              {banner?.title ?? "อะไหล่รถแทรกเตอร์ครบวงจร ส่งตรงถึงไร่ของคุณ"}
-            </h1>
-            <p className="mt-4 text-sm text-white/90 sm:text-base">
-              {banner?.subtitle ??
-                "รวมร้านค้าพาร์ทเนอร์คุณภาพทั่วประเทศ เทียบราคาง่าย ตรงรุ่นรถแน่นอน"}
-            </p>
+    <div className="flex flex-col gap-10 pb-6 sm:gap-14 sm:pb-10">
+      {/* Hero */}
+      <section className="bg-surface">
+        <div className="mx-auto max-w-4xl px-3 py-14 text-center sm:px-6 sm:py-20">
+          <h1 className="text-gradient-hero text-2xl font-extrabold leading-snug sm:text-4xl lg:text-5xl">
+            &ldquo;งานซ่อม งาน Custom ทำจบครบที่รถเหล็ก&rdquo;
+          </h1>
+          <p className="mt-5 text-base font-semibold text-primary sm:text-xl">
+            ช่างไทยหัวใจแกร่ง เร็ว แรง ฉับไว ให้เราบริการ งานดี งานคุณภาพ
+          </p>
+          <p className="mt-2 text-base font-semibold text-[#8b5cf6] sm:text-lg">ครบเครื่องเรื่องอะไหล่แท้</p>
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href={banner?.ctaHref || "/products"}
-                className="inline-flex items-center justify-center rounded-full bg-accent px-6 py-3 text-sm font-bold text-white shadow-lg shadow-accent/30 transition hover:-translate-y-0.5 hover:bg-accent-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary sm:text-base"
-              >
-                {banner?.ctaText || "เลือกซื้ออะไหล่"}
-              </Link>
-              <Link
-                href="/products"
-                className="inline-flex items-center justify-center rounded-full border-2 border-white/70 bg-white/5 px-6 py-3 text-sm font-bold text-white backdrop-blur-sm transition hover:bg-white hover:text-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary sm:text-base"
-              >
-                ดูวิธีใช้งาน
-              </Link>
-            </div>
-
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-xs font-medium text-white/90 sm:text-sm">
-              {TRUST_ITEMS.map((t) => (
-                <li key={t} className="flex items-center gap-1.5">
-                  <span className="text-primary-light" aria-hidden>
-                    ✓
-                  </span>
-                  {t}
-                </li>
-              ))}
-            </ul>
+          <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/call"
+              className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-primary/25 transition hover:-translate-y-0.5 sm:text-base"
+            >
+              🔧 เรียกช่างตอนนี้
+            </Link>
+            <Link
+              href="/products"
+              className="inline-flex items-center justify-center rounded-full border-2 border-primary/30 bg-white px-6 py-3 text-sm font-bold text-primary transition hover:-translate-y-0.5 hover:bg-primary/5 sm:text-base"
+            >
+              🛒 เลือกซื้ออะไหล่
+            </Link>
           </div>
+        </div>
 
-          <HeroImage />
+        {/* แบนเนอร์แบรนด์ — carousel แนวนอน 5 ใบ */}
+        <div className="mx-auto max-w-6xl px-3 pb-2 sm:px-6">
+          <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-3">
+            {BANNER_CARDS.map((b) => (
+              <div
+                key={b.title}
+                className="relative flex h-48 w-64 shrink-0 snap-start flex-col justify-between overflow-hidden rounded-3xl p-5 text-white shadow-lg sm:h-56 sm:w-80"
+                style={{ backgroundImage: `linear-gradient(135deg, ${b.from}, ${b.to})` }}
+              >
+                <div>
+                  <p className="text-lg font-extrabold sm:text-xl">{b.title}</p>
+                  <p className="text-xs font-medium text-white/85 sm:text-sm">{b.subtitle}</p>
+                </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="/products/hero-tractor.svg"
+                  alt=""
+                  aria-hidden
+                  className="absolute -bottom-4 -right-4 w-36 opacity-90 drop-shadow-xl sm:w-44"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -122,10 +132,7 @@ export default async function HomePage() {
         <section id="categories" className="scroll-mt-24">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold text-ink sm:text-xl">หมวดหมู่สินค้า</h2>
-            <Link
-              href="/products"
-              className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
-            >
+            <Link href="/products" className="link-indigo text-sm font-medium hover:underline">
               ดูทั้งหมด →
             </Link>
           </div>
@@ -155,10 +162,7 @@ export default async function HomePage() {
         <section>
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-lg font-bold text-ink sm:text-xl">สินค้าขายดี</h2>
-            <Link
-              href="/products?sort=popular"
-              className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded"
-            >
+            <Link href="/products?sort=popular" className="link-indigo text-sm font-medium hover:underline">
               ดูทั้งหมด →
             </Link>
           </div>
@@ -171,6 +175,67 @@ export default async function HomePage() {
             )}
           </div>
         </section>
+
+        {/* ข่าวล่าสุด */}
+        {newsArticles.length > 0 && (
+          <section>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-ink sm:text-xl">ข่าวล่าสุด</h2>
+              <Link href="/news" className="link-indigo text-sm font-medium hover:underline">
+                ดูทั้งหมด →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {newsArticles.map((n) => (
+                <NewsCard key={n.id} article={n} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ทีมช่างแนะนำ */}
+        {technicians.length > 0 && (
+          <section>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-ink sm:text-xl">ทีมช่างแนะนำ</h2>
+              <Link href="/technicians" className="link-indigo text-sm font-medium hover:underline">
+                ดูทั้งหมด →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+              {technicians.map((t) => {
+                const img = parseProductImage(t.imageJson);
+                return (
+                  <div
+                    key={t.id}
+                    className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                  >
+                    <div className="relative">
+                      <ProductImage image={img} size="md" rounded="rounded-none" />
+                      <span
+                        className={`absolute left-2 top-2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold text-white shadow-sm ${
+                          t.online ? "bg-primary" : "bg-muted"
+                        }`}
+                      >
+                        <span
+                          aria-hidden
+                          className={`h-1.5 w-1.5 rounded-full ${t.online ? "bg-white" : "bg-white/60"}`}
+                        />
+                        {t.online ? "ออนไลน์" : "ออฟไลน์"}
+                      </span>
+                    </div>
+                    <div className="flex flex-1 flex-col gap-1 p-3">
+                      <p className="truncate text-sm font-bold text-ink">{t.name}</p>
+                      <p className="text-[11px] text-muted">{t.code}</p>
+                      <StarRating rating={t.rating} reviewCount={t.reviewCount} />
+                      <p className="mt-auto pt-1 text-[11px] text-muted">งานสำเร็จ {t.jobsDone} งาน</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

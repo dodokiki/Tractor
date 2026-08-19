@@ -23,7 +23,7 @@ export function CartBadge() {
     <Link
       href="/cart"
       aria-label="ตะกร้าสินค้า"
-      className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+      className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl text-ink transition hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       🛒
       {totalCount > 0 && (

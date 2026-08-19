@@ -1,20 +1,85 @@
 @import "tailwindcss";
 
 @theme {
-  /* TractorHub design tokens — ตรงกับ UI mockup ใน Proposal */
+  /* Rodlex รถเหล็ก — design tokens (รีแบรนด์จาก TractorHub) */
   --color-primary: #1b7a43;
   --color-primary-dark: #14351f;
   --color-primary-light: #2fa55c;
   --color-accent: #f5862b;
   --color-accent-dark: #d9631a;
-  --color-surface: #f4f7f5;
+  --color-surface: #f1f2ee;
   --color-ink: #1e2b23;
   --color-muted: #6c7a70;
   --color-line: #d5e2d9;
+  /* ลิงก์เน้นสีคราม ตาม mockup (เรียกช่าง / ซื้ออะไหล่) */
+  --color-link: #4f46e5;
+  --color-link-dark: #4338ca;
+  /* ปุ่ม pill ไล่เฉดเขียว */
+  --color-brand-green-start: #8cc63f;
+  --color-brand-green-end: #1b7a43;
   --font-sans: "Noto Sans Thai", "Leelawadee UI", "Segoe UI", sans-serif;
 }
 
 body {
   background: var(--color-surface);
   color: var(--color-ink);
+}
+
+/* ===================== Rodlex brand utilities ===================== */
+
+/* ปุ่ม pill ไล่เฉดเขียว — ใช้ได้ทันทีกับปุ่มเดิมทั้งไซต์ที่มี rounded-full + bg-primary
+   (เข้าสู่ระบบ, กรองสินค้า, ยืนยัน ฯลฯ) โดยไม่ต้องรื้อโครง component เดิม */
+.rounded-full.bg-primary,
+.btn-pill {
+  background-image: linear-gradient(135deg, var(--color-brand-green-start), var(--color-brand-green-end));
+}
+.rounded-full.bg-primary:hover,
+.btn-pill:hover {
+  filter: brightness(1.06);
+}
+
+/* ปุ่ม pill ไล่เฉดส้ม — สำหรับ CTA รอง (ชำระเงิน ฯลฯ) ให้เข้าธีมเดียวกัน */
+.rounded-full.bg-accent,
+.btn-pill-accent {
+  background-image: linear-gradient(135deg, #ffb15c, var(--color-accent-dark));
+}
+.rounded-full.bg-accent:hover,
+.btn-pill-accent:hover {
+  filter: brightness(1.06);
+}
+
+/* ลิงก์เน้นสีคราม (เรียกช่าง / ซื้ออะไหล่ ฯลฯ) */
+.link-indigo {
+  color: var(--color-link);
+}
+.link-indigo:hover {
+  color: var(--color-link-dark);
+}
+
+/* หัวเรื่องใหญ่แบบ gradient text ตาม mockup หน้าแรก */
+.text-gradient-hero {
+  background-image: linear-gradient(90deg, #ec4899, #8b5cf6, #22c55e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.text-gradient-brand {
+  background-image: linear-gradient(90deg, var(--color-brand-green-start), var(--color-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* การ์ดขาว glassy มุมโค้งใหญ่ */
+.card-glass {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+/* ฟุตเทอร์พื้นไล่พาสเทล เขียวอ่อน → ชมพูอ่อน มุมโค้งใหญ่ด้านบน + เส้นทองด้านล่าง */
+.footer-pastel {
+  background-image: linear-gradient(135deg, #eaf7ec 0%, #f3f0f8 45%, #fbeef4 100%);
+}
+.footer-gold-line {
+  border-top: 2px solid #cc9a3a;
 }
