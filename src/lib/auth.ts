@@ -60,7 +60,7 @@ export class AuthError extends Error {
 /** OTP: โหมด mock ใช้รหัสคงที่ 123456 */
 export async function issueOtp(phone: string): Promise<string> {
   const code =
-    process.env.PAYMENT_MODE === "mock"
+    (process.env.PAYMENT_MODE || "mock") === "mock"
       ? "123456"
       : Math.floor(100000 + Math.random() * 900000).toString();
   await db.otpCode.create({
