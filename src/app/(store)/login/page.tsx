@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { OtpInput } from "@/components/store/otp-input";
 
 type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -68,15 +69,23 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-sm flex-col gap-6 px-3 py-16 sm:px-6">
+    <div className="mx-auto flex min-h-[80vh] max-w-sm flex-col justify-center gap-6 px-3 py-12 sm:px-6">
       <div className="text-center">
-        <p className="text-4xl" aria-hidden>🚜</p>
-        <h1 className="mt-2 text-xl font-bold text-ink">เข้าสู่ระบบ TractorHub</h1>
-        <p className="text-sm text-muted">เข้าสู่ระบบด้วยเบอร์โทรศัพท์ ไม่ต้องใช้รหัสผ่าน</p>
+        <span
+          className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary text-3xl shadow-lg shadow-primary/30 sm:h-20 sm:w-20 sm:text-4xl"
+          aria-hidden
+        >
+          🚜
+        </span>
+        <h1 className="mt-4 text-xl font-bold text-ink sm:text-2xl">เข้าสู่ระบบ TractorHub</h1>
+        <p className="mt-1 text-sm text-muted">เข้าสู่ระบบด้วยเบอร์โทรศัพท์ ไม่ต้องใช้รหัสผ่าน</p>
       </div>
 
       {step === "phone" ? (
-        <form onSubmit={handleRequestOtp} className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+        <form
+          onSubmit={handleRequestOtp}
+          className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-md ring-1 ring-black/5 sm:p-6"
+        >
           <label className="flex flex-col gap-1 text-sm font-medium text-ink">
             เบอร์โทรศัพท์
             <input
@@ -85,40 +94,36 @@ export default function LoginPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="0811111111"
-              className="rounded-lg border border-line px-3 py-2.5 text-sm"
+              className="rounded-lg border border-line px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             />
           </label>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-60"
+            className="mt-1 w-full rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-dark hover:shadow-md disabled:translate-y-0 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {loading ? "กำลังส่ง..." : "ขอรหัส OTP"}
           </button>
         </form>
       ) : (
-        <form onSubmit={handleVerify} className="flex flex-col gap-3 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-          <p className="text-sm text-muted">
+        <form
+          onSubmit={handleVerify}
+          className="flex flex-col gap-4 rounded-2xl bg-white p-5 shadow-md ring-1 ring-black/5 sm:p-6"
+        >
+          <p className="text-center text-sm text-muted">
             ส่งรหัส OTP ไปยัง <span className="font-semibold text-ink">{phone}</span> แล้ว
           </p>
+
           {devCode && (
-            <p className="rounded-lg bg-accent/10 px-3 py-2 text-sm font-semibold text-accent-dark">
-              โหมดทดสอบ: รหัส OTP คือ {devCode}
-            </p>
+            <div className="rounded-xl border-2 border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-800">
+              <p>โหมดทดสอบ: รหัสคือ</p>
+              <p className="mt-1 text-lg font-extrabold tracking-[0.3em]">{devCode}</p>
+            </div>
           )}
-          <label className="flex flex-col gap-1 text-sm font-medium text-ink">
-            รหัส OTP
-            <input
-              type="text"
-              inputMode="numeric"
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder="123456"
-              className="rounded-lg border border-line px-3 py-2.5 text-sm"
-            />
-          </label>
+
+          <OtpInput value={code} onChange={setCode} />
+
           <label className="flex flex-col gap-1 text-sm font-medium text-ink">
             ชื่อ-นามสกุล <span className="font-normal text-muted">(สำหรับผู้ใช้ใหม่)</span>
             <input
@@ -126,14 +131,14 @@ export default function LoginPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="ชื่อของคุณ"
-              className="rounded-lg border border-line px-3 py-2.5 text-sm"
+              className="rounded-lg border border-line px-3 py-2.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             />
           </label>
           {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
           <button
             type="submit"
-            disabled={loading}
-            className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-60"
+            disabled={loading || code.length < 6}
+            className="w-full rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-dark hover:shadow-md disabled:translate-y-0 disabled:cursor-not-allowed disabled:bg-line disabled:text-muted disabled:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {loading ? "กำลังตรวจสอบ..." : "ยืนยันและเข้าสู่ระบบ"}
           </button>
@@ -144,7 +149,7 @@ export default function LoginPage() {
               setCode("");
               setError(null);
             }}
-            className="text-xs text-muted hover:underline"
+            className="text-center text-xs text-muted hover:text-primary hover:underline"
           >
             ← เปลี่ยนเบอร์โทรศัพท์
           </button>

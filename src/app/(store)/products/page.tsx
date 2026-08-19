@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { bahtToSatang } from "@/lib/money";
@@ -15,6 +16,7 @@ type SearchParams = {
   maxPrice?: string;
   sort?: string;
   page?: string;
+  vendorId?: string;
 };
 
 export default async function ProductsPage({
@@ -28,10 +30,12 @@ export default async function ProductsPage({
   const brand = sp.brand?.trim() || undefined;
   const sort = sp.sort || "new";
   const page = Math.max(1, Number(sp.page) || 1);
+  const vendorId = sp.vendorId?.trim() || undefined;
 
   const where: Prisma.ProductWhereInput = { active: true };
   if (category) where.category = { OR: [{ slug: category }, { id: category }] };
   if (brand) where.brand = brand;
+  if (vendorId) where.vendorId = vendorId;
   if (q)
     where.OR = [
       { name: { contains: q } },
@@ -74,7 +78,7 @@ export default async function ProductsPage({
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: { vendor: { select: { shopName: true } } },
+      include: { vendor: { select: { id: true, shopName: true } } },
     }),
     db.category.findMany({
       orderBy: [{ sort: "asc" }, { name: "asc" }],
@@ -111,6 +115,7 @@ export default async function ProductsPage({
     name: p.name,
     priceSatang: p.priceSatang,
     imageJson: p.imageJson,
+    stock: p.stock,
     vendor: p.vendor,
     avgRating: ratingMap.get(p.id)?.avgRating ?? 0,
     reviewCount: ratingMap.get(p.id)?.reviewCount ?? 0,
@@ -119,45 +124,69 @@ export default async function ProductsPage({
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const brands = brandRows.map((b) => b.brand).filter((b): b is string => Boolean(b));
 
+  const vendorShopName = vendorId
+    ? (await db.vendor.findUnique({ where: { id: vendorId }, select: { shopName: true } }))
+        ?.shopName
+    : undefined;
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-5 px-3 py-6 sm:px-6 sm:py-10">
       <div>
         <h1 className="text-xl font-bold text-ink sm:text-2xl">
-          {q ? `ผลการค้นหา “${q}”` : "สินค้าทั้งหมด"}
+          {vendorShopName
+            ? `🏪 ${vendorShopName}`
+            : q
+              ? `ผลการค้นหา "${q}"`
+              : "สินค้าทั้งหมด"}
         </h1>
         <p className="text-sm text-muted">พบ {total.toLocaleString("th-TH")} รายการ</p>
       </div>
 
-      <FiltersBar
-        categories={categories}
-        brands={brands}
-        initial={{ q, category, brand, minPrice: sp.minPrice, maxPrice: sp.maxPrice, sort }}
-      />
+      <div className="grid gap-5 lg:grid-cols-[240px_1fr]">
+        <FiltersBar
+          categories={categories}
+          brands={brands}
+          initial={{ q, category, brand, minPrice: sp.minPrice, maxPrice: sp.maxPrice, sort }}
+        />
 
-      {products.length === 0 ? (
-        <p className="rounded-2xl bg-white p-10 text-center text-sm text-muted shadow-sm">
-          ไม่พบสินค้าที่ตรงกับเงื่อนไข ลองปรับตัวกรองใหม่อีกครั้ง
-        </p>
-      ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
+        <div className="flex flex-col gap-5">
+          {products.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 rounded-2xl bg-white p-10 text-center shadow-sm ring-1 ring-black/5 sm:p-16">
+              <span className="text-6xl" aria-hidden>
+                🔍
+              </span>
+              <p className="text-base font-bold text-ink">ไม่พบสินค้าที่ตรงกับเงื่อนไข</p>
+              <p className="text-sm text-muted">ลองปรับตัวกรองหรือคำค้นหาใหม่อีกครั้ง</p>
+              <Link
+                href="/products"
+                className="mt-2 rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-white transition hover:bg-primary-dark"
+              >
+                ล้างตัวกรองทั้งหมด
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+              {products.map((p) => (
+                <ProductCard key={p.id} product={p} />
+              ))}
+            </div>
+          )}
+
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            searchParams={{
+              q,
+              category,
+              brand,
+              minPrice: sp.minPrice,
+              maxPrice: sp.maxPrice,
+              sort,
+              vendorId,
+            }}
+          />
         </div>
-      )}
-
-      <Pagination
-        page={page}
-        totalPages={totalPages}
-        searchParams={{
-          q,
-          category,
-          brand,
-          minPrice: sp.minPrice,
-          maxPrice: sp.maxPrice,
-          sort,
-        }}
-      />
+      </div>
     </div>
   );
 }

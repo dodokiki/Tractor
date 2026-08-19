@@ -139,8 +139,8 @@ export function CheckoutForm({ addresses }: { addresses: Address[] }) {
           {addresses.map((a) => (
             <label
               key={a.id}
-              className={`flex cursor-pointer items-start gap-2 rounded-xl border p-3 text-sm ${
-                addressMode === a.id ? "border-primary bg-primary/5" : "border-line"
+              className={`flex cursor-pointer items-start gap-2 rounded-xl border-2 p-3 text-sm transition ${
+                addressMode === a.id ? "border-primary bg-primary/5" : "border-line hover:border-primary/30"
               }`}
             >
               <input
@@ -163,8 +163,8 @@ export function CheckoutForm({ addresses }: { addresses: Address[] }) {
           ))}
 
           <label
-            className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm ${
-              addressMode === NEW_ADDRESS ? "border-primary bg-primary/5" : "border-line"
+            className={`flex cursor-pointer items-center gap-2 rounded-xl border-2 p-3 text-sm transition ${
+              addressMode === NEW_ADDRESS ? "border-primary bg-primary/5" : "border-line hover:border-primary/30"
             }`}
           >
             <input
@@ -227,18 +227,20 @@ export function CheckoutForm({ addresses }: { addresses: Address[] }) {
 
       <section className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 sm:p-6">
         <h2 className="mb-3 text-sm font-bold text-ink">วิธีชำระเงิน</h2>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {(
             [
-              { value: "PROMPTPAY", label: "📱 พร้อมเพย์ (QR)" },
-              { value: "BANK_TRANSFER", label: "🏦 โอนผ่านธนาคาร" },
-              { value: "CARD", label: "💳 บัตรเครดิต/เดบิต" },
-            ] as { value: PaymentMethod; label: string }[]
+              { value: "PROMPTPAY", icon: "📱", label: "พร้อมเพย์ (QR)", desc: "สแกนจ่ายผ่านแอปธนาคาร" },
+              { value: "BANK_TRANSFER", icon: "🏦", label: "โอนผ่านธนาคาร", desc: "โอนแล้วแนบหลักฐาน" },
+              { value: "CARD", icon: "💳", label: "บัตรเครดิต/เดบิต", desc: "ตัดผ่านบัตรทันที" },
+            ] as { value: PaymentMethod; icon: string; label: string; desc: string }[]
           ).map((opt) => (
             <label
               key={opt.value}
-              className={`flex cursor-pointer items-center gap-2 rounded-xl border p-3 text-sm ${
-                method === opt.value ? "border-primary bg-primary/5" : "border-line"
+              className={`relative flex cursor-pointer flex-col gap-1.5 rounded-2xl border-2 p-4 text-sm transition ${
+                method === opt.value
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "border-line hover:border-primary/30"
               }`}
             >
               <input
@@ -246,8 +248,13 @@ export function CheckoutForm({ addresses }: { addresses: Address[] }) {
                 name="method"
                 checked={method === opt.value}
                 onChange={() => setMethod(opt.value)}
+                className="absolute right-3 top-3"
               />
-              <span className="font-medium text-ink">{opt.label}</span>
+              <span className="text-2xl" aria-hidden>
+                {opt.icon}
+              </span>
+              <span className="font-bold text-ink">{opt.label}</span>
+              <span className="text-xs text-muted">{opt.desc}</span>
             </label>
           ))}
         </div>
@@ -271,7 +278,7 @@ export function CheckoutForm({ addresses }: { addresses: Address[] }) {
         <button
           type="submit"
           disabled={submitting}
-          className="mt-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-white hover:bg-accent-dark disabled:opacity-60"
+          className="mt-2 w-full rounded-full bg-accent px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-accent-dark hover:shadow-md disabled:translate-y-0 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
         >
           {submitting ? "กำลังยืนยัน..." : "ยืนยันคำสั่งซื้อ"}
         </button>

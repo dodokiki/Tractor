@@ -27,6 +27,9 @@ export function FiltersBar({
   const [minPrice, setMinPrice] = useState(initial.minPrice ?? "");
   const [maxPrice, setMaxPrice] = useState(initial.maxPrice ?? "");
   const [sort, setSort] = useState(initial.sort ?? "new");
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const activeCount = [category, brand, minPrice, maxPrice].filter(Boolean).length;
 
   function apply(overrides: Record<string, string | undefined> = {}) {
     const values: Record<string, string | undefined> = {
@@ -45,29 +48,108 @@ export function FiltersBar({
     router.push(`/products${params.toString() ? `?${params.toString()}` : ""}`);
   }
 
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <label className="flex flex-col gap-1 text-xs font-medium text-muted">
-          หมวดหมู่
-          <select
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              apply({ category: e.target.value || undefined });
-            }}
-            className="rounded-lg border border-line bg-white px-2 py-2 text-sm text-ink"
-          >
-            <option value="">ทั้งหมด</option>
-            {categories.map((c) => (
-              <option key={c.slug} value={c.slug}>
-                {c.emoji} {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+  function clearAll() {
+    setCategory("");
+    setBrand("");
+    setMinPrice("");
+    setMaxPrice("");
+    setSort("new");
+    router.push(initial.q ? `/products?q=${encodeURIComponent(initial.q)}` : "/products");
+  }
 
-        <label className="flex flex-col gap-1 text-xs font-medium text-muted">
+  return (
+    <div className="flex flex-col gap-3">
+      {/* แถวชิปหมวดหมู่ — แสดงตลอดทุกขนาดจอ เลื่อนแนวนอนบนมือถือ */}
+      <div className="flex gap-2 overflow-x-auto pb-1 lg:hidden">
+        <button
+          type="button"
+          onClick={() => {
+            setCategory("");
+            apply({ category: undefined });
+          }}
+          className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+            category === "" ? "bg-primary text-white" : "bg-white text-ink ring-1 ring-line"
+          }`}
+        >
+          ทั้งหมด
+        </button>
+        {categories.map((c) => (
+          <button
+            key={c.slug}
+            type="button"
+            onClick={() => {
+              setCategory(c.slug);
+              apply({ category: c.slug });
+            }}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+              category === c.slug ? "bg-primary text-white" : "bg-white text-ink ring-1 ring-line"
+            }`}
+          >
+            {c.emoji} {c.name}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => setMobileOpen((v) => !v)}
+          className="shrink-0 rounded-full bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent-dark ring-1 ring-accent/30"
+        >
+          ⚙️ ตัวกรอง{activeCount > 0 ? ` (${activeCount})` : ""}
+        </button>
+      </div>
+
+      <div
+        className={`flex-col gap-5 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 sm:p-5 lg:sticky lg:top-24 lg:flex ${
+          mobileOpen ? "flex" : "hidden lg:flex"
+        }`}
+      >
+        <div className="hidden items-center justify-between lg:flex">
+          <h2 className="text-sm font-bold text-ink">ตัวกรองสินค้า</h2>
+          {activeCount > 0 && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="text-xs font-semibold text-muted hover:text-primary"
+            >
+              ล้างทั้งหมด
+            </button>
+          )}
+        </div>
+
+        {/* หมวดหมู่ — เฉพาะ desktop sidebar (มือถือใช้ชิปด้านบนแล้ว) */}
+        <div className="hidden flex-col gap-2 lg:flex">
+          <p className="text-xs font-semibold text-muted">หมวดหมู่</p>
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setCategory("");
+                apply({ category: undefined });
+              }}
+              className={`rounded-lg px-2.5 py-1.5 text-left text-sm font-medium transition ${
+                category === "" ? "bg-primary/10 text-primary" : "text-ink hover:bg-surface"
+              }`}
+            >
+              ทั้งหมด
+            </button>
+            {categories.map((c) => (
+              <button
+                key={c.slug}
+                type="button"
+                onClick={() => {
+                  setCategory(c.slug);
+                  apply({ category: c.slug });
+                }}
+                className={`rounded-lg px-2.5 py-1.5 text-left text-sm font-medium transition ${
+                  category === c.slug ? "bg-primary/10 text-primary" : "text-ink hover:bg-surface"
+                }`}
+              >
+                {c.emoji} {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label className="flex flex-col gap-1.5 text-xs font-semibold text-muted">
           ยี่ห้อรถ
           <select
             value={brand}
@@ -75,7 +157,7 @@ export function FiltersBar({
               setBrand(e.target.value);
               apply({ brand: e.target.value || undefined });
             }}
-            className="rounded-lg border border-line bg-white px-2 py-2 text-sm text-ink"
+            className="rounded-lg border border-line bg-white px-2.5 py-2 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <option value="">ทั้งหมด</option>
             {brands.map((b) => (
@@ -86,35 +168,32 @@ export function FiltersBar({
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-xs font-medium text-muted">
-          ราคาต่ำสุด (บาท)
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-            className="rounded-lg border border-line bg-white px-2 py-2 text-sm text-ink"
-            placeholder="0"
-          />
-        </label>
+        <div className="flex flex-col gap-1.5 text-xs font-semibold text-muted">
+          ช่วงราคา (บาท)
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className="w-full rounded-lg border border-line bg-white px-2.5 py-2 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              placeholder="0"
+            />
+            <span className="text-muted">–</span>
+            <input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="w-full rounded-lg border border-line bg-white px-2.5 py-2 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              placeholder="ไม่จำกัด"
+            />
+          </div>
+        </div>
 
-        <label className="flex flex-col gap-1 text-xs font-medium text-muted">
-          ราคาสูงสุด (บาท)
-          <input
-            type="number"
-            min={0}
-            inputMode="numeric"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-            className="rounded-lg border border-line bg-white px-2 py-2 text-sm text-ink"
-            placeholder="ไม่จำกัด"
-          />
-        </label>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="flex items-center gap-2 text-xs font-medium text-muted">
+        <label className="flex flex-col gap-1.5 text-xs font-semibold text-muted">
           เรียงลำดับ
           <select
             value={sort}
@@ -122,7 +201,7 @@ export function FiltersBar({
               setSort(e.target.value);
               apply({ sort: e.target.value });
             }}
-            className="rounded-lg border border-line bg-white px-2 py-2 text-sm text-ink"
+            className="rounded-lg border border-line bg-white px-2.5 py-2 text-sm text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <option value="new">ใหม่ล่าสุด</option>
             <option value="popular">ยอดนิยม</option>
@@ -136,21 +215,14 @@ export function FiltersBar({
           <button
             type="button"
             onClick={() => apply()}
-            className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark"
+            className="flex-1 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             กรองสินค้า
           </button>
           <button
             type="button"
-            onClick={() => {
-              setCategory("");
-              setBrand("");
-              setMinPrice("");
-              setMaxPrice("");
-              setSort("new");
-              router.push(initial.q ? `/products?q=${encodeURIComponent(initial.q)}` : "/products");
-            }}
-            className="rounded-full border border-line px-4 py-2 text-sm font-semibold text-muted hover:bg-surface"
+            onClick={clearAll}
+            className="rounded-full border border-line px-4 py-2.5 text-sm font-semibold text-muted transition hover:bg-surface"
           >
             ล้างตัวกรอง
           </button>

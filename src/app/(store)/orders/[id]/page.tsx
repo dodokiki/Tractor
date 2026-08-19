@@ -4,6 +4,10 @@ import { getSessionUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatBaht } from "@/lib/money";
 import { OrderStatusChip, SubOrderStatusChip } from "@/components/store/status-chip";
+import { CheckoutSteps } from "@/components/store/checkout-steps";
+import { OrderTimeline } from "@/components/store/order-timeline";
+import { ProductImage } from "@/components/store/product-image";
+import { parseProductImage } from "@/components/store/image";
 
 type AddressSnapshot = {
   recipient?: string;
@@ -37,7 +41,7 @@ export default async function OrderDetailPage({
       subOrders: {
         include: {
           vendor: { select: { shopName: true, logoEmoji: true } },
-          items: true,
+          items: { include: { product: { select: { imageJson: true } } } },
         },
       },
       payment: true,
@@ -58,9 +62,12 @@ export default async function OrderDetailPage({
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-5 px-3 py-6 sm:px-6 sm:py-10">
       {sp.success === "1" && (
-        <div className="rounded-xl bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
-          🎉 สั่งซื้อและชำระเงินสำเร็จ ขอบคุณที่ใช้บริการ TractorHub
-        </div>
+        <>
+          <CheckoutSteps current={3} />
+          <div className="rounded-xl bg-primary/10 px-4 py-3 text-sm font-semibold text-primary">
+            🎉 สั่งซื้อและชำระเงินสำเร็จ ขอบคุณที่ใช้บริการ TractorHub
+          </div>
+        </>
       )}
 
       <div className="flex flex-col gap-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
@@ -72,6 +79,10 @@ export default async function OrderDetailPage({
           </p>
         </div>
         <OrderStatusChip status={order.status} />
+      </div>
+
+      <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5 sm:p-6">
+        <OrderTimeline status={order.status} />
       </div>
 
       {needsPayment && (
@@ -113,8 +124,14 @@ export default async function OrderDetailPage({
             </div>
             <div className="flex flex-col divide-y divide-line">
               {so.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-2 text-sm">
-                  <span className="text-ink">
+                <div key={item.id} className="flex items-center gap-3 py-2 text-sm">
+                  <ProductImage
+                    image={parseProductImage(item.product.imageJson)}
+                    size="xs"
+                    rounded="rounded-lg"
+                    className="h-11 w-11 shrink-0"
+                  />
+                  <span className="flex-1 text-ink">
                     {item.nameSnapshot} × {item.qty}
                   </span>
                   <span className="font-semibold text-ink">
@@ -123,7 +140,7 @@ export default async function OrderDetailPage({
                 </div>
               ))}
             </div>
-            <p className="mt-2 text-right text-sm font-bold text-primary">
+            <p className="mt-2 text-right text-sm font-bold text-primary-dark">
               รวม {formatBaht(so.itemsSatang)}
             </p>
           </section>

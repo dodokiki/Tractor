@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CheckoutSteps } from "@/components/store/checkout-steps";
 
 type ApiResponse<T> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -110,6 +111,7 @@ export default function PayPage() {
   return (
     <div className="mx-auto flex max-w-md flex-col gap-5 px-3 py-10 text-center sm:px-6">
       <h1 className="text-xl font-bold text-ink">ชำระเงินคำสั่งซื้อ</h1>
+      <CheckoutSteps current={2} />
 
       {loading && <p className="text-sm text-muted">กำลังเตรียมข้อมูลการชำระเงิน...</p>}
       {error && <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
@@ -118,13 +120,23 @@ export default function PayPage() {
         <div className="flex flex-col items-center gap-4 rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5">
           {info.method === "PROMPTPAY" && info.qrDataUrl && (
             <>
+              <div className="flex items-center gap-2 rounded-full bg-[#1e4fa3]/10 px-4 py-1.5">
+                <span className="text-lg" aria-hidden>
+                  💠
+                </span>
+                <span className="text-sm font-extrabold tracking-wide text-[#1e4fa3]">
+                  PromptPay
+                </span>
+              </div>
               <p className="text-sm text-muted">สแกน QR ด้วยแอปธนาคารเพื่อชำระเงิน</p>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={info.qrDataUrl}
-                alt="PromptPay QR"
-                className="h-56 w-56 rounded-xl border border-line object-contain"
-              />
+              <div className="rounded-2xl border-2 border-line bg-white p-4 shadow-sm">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={info.qrDataUrl}
+                  alt="PromptPay QR"
+                  className="h-56 w-56 object-contain"
+                />
+              </div>
             </>
           )}
 
@@ -157,7 +169,7 @@ export default function PayPage() {
             type="button"
             onClick={handleNotify}
             disabled={notifying}
-            className="w-full rounded-full bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary-dark disabled:opacity-60"
+            className="w-full rounded-full bg-primary px-6 py-3.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-primary-dark hover:shadow-md disabled:translate-y-0 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             {notifying ? "กำลังส่ง..." : "✅ แจ้งชำระเงินแล้ว"}
           </button>

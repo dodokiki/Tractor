@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { CartProvider } from "@/components/store/cart-context";
 import { Header } from "@/components/store/header";
 import { Footer } from "@/components/store/footer";
+import { ToastHost } from "@/components/store/toast-host";
 
 export default function StoreLayout({ children }: { children: ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function StoreLayout({ children }: { children: ReactNode }) {
         <main className="flex-1">{children}</main>
         <Footer />
       </div>
+      <ToastHost />
     </CartProvider>
   );
 }

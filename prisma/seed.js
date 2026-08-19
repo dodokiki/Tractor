@@ -22,8 +22,40 @@ const GRAD = [
   { from: "#F5862B", to: "#D9631A" }, // ส้ม
   { from: "#3D5AC9", to: "#6D8CFF" }, // น้ำเงิน
 ];
-const img = (emoji, i) =>
-  JSON.stringify({ emoji, from: GRAD[i % 3].from, to: GRAD[i % 3].to });
+// ภาพ illustration ต่อสินค้า (public/products/*.svg) — เลือกตามรหัส SKU
+const SVG_BY_SKU = {
+  "TK-AF-L4708": "air-filter",
+  "TK-OF-M6040": "oil-filter",
+  "IS-FF-JD5045": "fuel-filter",
+  "KR-BAT-85": "battery",
+  "KR-BAT-100": "battery",
+  "IS-RB-24": "rotary-blade",
+  "IS-DP-3": "plow-disc",
+  "TK-HB-22": "plow-disc",
+  "KR-TR-816": "tire",
+  "KR-TR-1492": "tire",
+  "KR-TB-1224": "tire",
+  "PF-EO-1540": "engine-oil",
+  "PF-HY-68": "engine-oil",
+  "PF-GR-EP2": "grease",
+  "PF-GO-85140": "engine-oil",
+  "TK-HP-M": "hydraulic-pump",
+  "IS-HC-2": "hydraulic-pump",
+  "IS-HH-15": "hydraulic-hose",
+  "TK-HG-L": "gasket",
+  "TK-PK-L4708": "piston-kit",
+  "IS-WP-5310": "hydraulic-pump",
+  "TK-IJ-M6040": "injector",
+  "KR-HT-CAT1": "implement-hitch",
+  "KR-PTO-6": "pto-shaft",
+};
+const img = (emoji, i, sku) =>
+  JSON.stringify({
+    emoji,
+    from: GRAD[i % 3].from,
+    to: GRAD[i % 3].to,
+    ...(SVG_BY_SKU[sku] ? { img: `/products/${SVG_BY_SKU[sku]}.svg` } : {}),
+  });
 
 // ---------- 1) ล้างข้อมูลเดิมตามลำดับ FK ----------
 async function reset() {
@@ -632,7 +664,7 @@ async function main() {
         description: p.desc,
         priceSatang: baht(p.price),
         stock: p.stock,
-        imageJson: img(p.emoji, gi++),
+        imageJson: img(p.emoji, gi++, p.sku),
         active: true,
         createdAt: daysAgo(200 - gi * 3),
       },
