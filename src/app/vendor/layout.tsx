@@ -22,7 +22,9 @@ export default async function VendorLayout({
         title="พอร์ทัลร้านค้า"
         subtitle={user.vendor?.shopName ?? user.name}
       />
-      <main className="flex-1 overflow-x-hidden p-6 lg:p-8">{children}</main>
+      <main className="flex-1 overflow-x-hidden p-6 lg:p-8">
+        <div className="mx-auto w-full max-w-6xl">{children}</div>
+      </main>
     </div>
   );
 }

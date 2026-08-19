@@ -54,7 +54,7 @@ export default function Sidebar({
   const bg = role === "ADMIN" ? "bg-primary-dark" : "bg-primary";
 
   return (
-    <aside className={`${bg} flex h-full w-64 shrink-0 flex-col text-white`}>
+    <aside className={`${bg} sticky top-0 flex h-screen w-64 shrink-0 flex-col self-start text-white`}>
       <div className="border-b border-white/10 px-5 py-6">
         <div className="flex items-center gap-2 text-lg font-bold">
           <span>🚜</span>

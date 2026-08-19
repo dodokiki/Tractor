@@ -15,7 +15,9 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen bg-surface">
       <Sidebar role="ADMIN" title="หลังบ้านแอดมิน" subtitle={user.name} />
-      <main className="flex-1 overflow-x-hidden p-6 lg:p-8">{children}</main>
+      <main className="flex-1 overflow-x-hidden p-6 lg:p-8">
+        <div className="mx-auto w-full max-w-6xl">{children}</div>
+      </main>
     </div>
   );
 }
