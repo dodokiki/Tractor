@@ -21,10 +21,12 @@
 
 ```bash
 npm install
-npx prisma db push     # สร้างฐานข้อมูล SQLite (dev)
+npm run db:push:dev    # สร้างฐานข้อมูล SQLite (dev)
 npm run db:seed        # ข้อมูลตัวอย่าง 4 ร้านค้า 24 สินค้า
 npm run dev            # http://localhost:3000
 ```
+
+> Production ใช้ PostgreSQL (`prisma/schema.prisma`) ส่วน dev ในเครื่องใช้ SQLite (`prisma/schema.sqlite.prisma`) — ดูขั้นตอน deploy ที่ [DEPLOY.md](./DEPLOY.md)
 
 ### บัญชีทดสอบ (OTP ในโหมด dev = `123456`)
 

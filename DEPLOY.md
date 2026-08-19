@@ -4,18 +4,11 @@
 
 ## ขั้นตอน (ครั้งแรก)
 
-1. **สร้างฐานข้อมูล Postgres ฟรี** — แนะนำ [Neon](https://neon.tech) หรือ Vercel Postgres (Storage tab ในโปรเจกต์ Vercel) แล้วคัดลอก connection string แบบ **pooled** (มี `-pooler` / pgbouncer)
+> โครงสร้าง schema: `prisma/schema.prisma` = **PostgreSQL** (ใช้ตอน build/deploy อัตโนมัติ) · `prisma/schema.sqlite.prisma` = SQLite สำหรับ dev ในเครื่อง (`npm run dev` / `npm run db:push:dev` จัดการให้เอง)
 
-2. **สลับ provider ใน `prisma/schema.prisma`** (แก้บรรทัดเดียว):
+1. **สร้างฐานข้อมูล Postgres ฟรี** — ในโปรเจกต์ Vercel ไปที่แท็บ **Storage → Create Database → Neon (Postgres)** (หรือสมัคร [Neon](https://neon.tech) ตรงก็ได้) เมื่อสร้างเสร็จ Vercel จะเพิ่ม env `DATABASE_URL` ให้อัตโนมัติ — ให้ใช้ connection string แบบ **pooled** (มี `-pooler`)
 
-```prisma
-datasource db {
-  provider = "postgresql"   // เดิม: "sqlite"
-  url      = env("DATABASE_URL")
-}
-```
-
-3. **Import โปรเจกต์เข้า Vercel** (repo: github.com/dodokiki/Tractor, Root Directory = `tractorhub`) แล้วตั้ง Environment Variables:
+2. **Import โปรเจกต์เข้า Vercel** (repo: github.com/dodokiki/Tractor, Root Directory = `tractorhub`) แล้วตั้ง Environment Variables:
 
 | ตัวแปร | ค่า |
 |---|---|
@@ -24,14 +17,19 @@ datasource db {
 | `PROMPTPAY_ID` | เบอร์/เลขประจำตัวผู้เสียภาษีรับเงิน PromptPay จริง |
 | `PAYMENT_MODE` | `mock` (จนกว่าจะเชื่อม Omise/2C2P จริง) |
 
-4. **สร้างตาราง + ข้อมูลตัวอย่าง** (รันจากเครื่องคุณ ชี้ DATABASE_URL ไปที่ Postgres):
+3. **สร้างตาราง + ข้อมูลตัวอย่าง** (รันครั้งเดียวจากเครื่องคุณ ชี้ไปที่ Postgres — PowerShell):
 
 ```bash
+cd tractorhub
+$env:DATABASE_URL = "<postgres connection string>"
 npx prisma db push
+npx prisma generate
 node prisma/seed.js
+Remove-Item Env:DATABASE_URL
+npm run dev   # กลับสู่โหมด dev (สลับ client กลับเป็น SQLite ให้อัตโนมัติ)
 ```
 
-5. Deploy — สคริปต์ `build` รัน `prisma generate` ให้อัตโนมัติแล้ว
+4. **Redeploy** — สคริปต์ `build` รัน `prisma generate` (schema Postgres) ให้อัตโนมัติแล้ว
 
 ## เช็คลิสต์ก่อนขึ้น Production จริง
 

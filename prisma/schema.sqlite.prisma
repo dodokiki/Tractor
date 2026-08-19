@@ -1,14 +1,13 @@
 // TractorHub — Phase 1 Database Schema
 // เงินทุกจำนวนเก็บเป็น "สตางค์" (Int) เพื่อความแม่นยำทางการเงิน
-// schema หลัก = PostgreSQL (production/Vercel) — สำหรับ dev ในเครื่องใช้ schema.sqlite.prisma
-// (npm run dev และ npm run db:push:dev จัดการ generate ให้อัตโนมัติ)
+// SQLite สำหรับ dev — โครงสร้างพอร์ตไป PostgreSQL ได้ทันที (เปลี่ยน provider)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
